@@ -84,8 +84,8 @@ textarea:focus, input[type=text]:focus { outline: none; border-color: var(--purp
 .channel-badge { font-size: 10px; font-weight: 500; padding: 2px 8px; border-radius: 20px; background: var(--purple-light); color: var(--purple); letter-spacing: .04em; }
 .dims-badge { font-size: 10px; color: var(--text-tertiary); margin-left: auto; }
 .variant-body { display: grid; grid-template-columns: 200px 1fr; min-height: 140px; }
-.variant-preview { background: var(--bg-secondary); border-right: 0.5px solid var(--border); display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; min-height: 140px; }
-.variant-preview img { width: 100%; height: 100%; object-fit: cover; }
+.variant-preview { background: var(--bg-secondary); border-right: 0.5px solid var(--border); overflow: hidden; position: relative; min-height: 140px; display: flex; align-items: center; justify-content: center; }
+.variant-preview img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; }
 .preview-loading { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; background: var(--bg-secondary); }
 .preview-loading-bar { width: 60px; height: 2px; background: var(--purple-light); border-radius: 2px; overflow: hidden; }
 .preview-loading-fill { height: 100%; background: var(--purple); animation: lfill 1.5s ease-in-out infinite; }
@@ -380,16 +380,25 @@ Respond ONLY as a JSON array. No markdown, no preamble. Schema:
     variants.forEach((v, idx) => {
       const ok = v.compliant !== false;
       const channelInfo = channels.find(c => c.name === v.channel) || channels[idx] || {};
+      
+      const ratioMap = {
+        '1:1': 1, '16:9': 9/16, '4:1': 1/4, '3.4:1': 1/3.4, '6:5': 5/6, '9:16': 16/9
+      };
+      const ratio = channelInfo.ratio || '1:1';
+      const heightRatio = ratioMap[ratio] || 1;
+      const previewH = Math.round(200 * heightRatio);
+      const previewH_clamped = Math.min(Math.max(previewH, 60), 220);
+
       const card = document.createElement('div');
       card.className = 'variant-card';
       card.innerHTML = `
         <div class="variant-header">
           <span class="channel-badge">${v.channel}</span>
-          <span class="ai-badge">DALL-E 3</span>
+          <span class="ai-badge">gpt-image-1</span>
           <span class="dims-badge">${v.dims}</span>
         </div>
         <div class="variant-body">
-          <div class="variant-preview" id="preview-${idx}">
+          <div class="variant-preview" id="preview-${idx}" style="height:${previewH_clamped}px;min-height:${previewH_clamped}px">
             <div class="preview-loading">
               <div class="preview-loading-bar"><div class="preview-loading-fill"></div></div>
               <div class="preview-loading-text">Rendering...</div>
