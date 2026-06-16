@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Doc Style Prompt Adjuster</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #ffffff; --bg-secondary: #f7f7f5; --bg-tertiary: #f1f0ec;
+  --text-primary: #1a1a18; --text-secondary: #6b6b67; --text-tertiary: #9e9e9a;
+  --border: rgba(0,0,0,0.1); --border-mid: rgba(0,0,0,0.2);
+  --purple: #534AB7; --purple-light: #EEEDFE; --purple-dark: #26215C;
+  --teal: #5DCAA5; --radius-md: 8px; --radius-lg: 12px; --radius-xl: 20px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1c1a; --bg-secondary: #252523; --bg-tertiary: #2e2e2b;
+    --text-primary: #f0ede8; --text-secondary: #9e9e9a; --text-tertiary: #6b6b67;
+    --border: rgba(255,255,255,0.1); --border-mid: rgba(255,255,255,0.2);
+    --purple-light: #26215C; --purple-dark: #CECBF6;
+  }
+}
+html, body { height: 100%; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+.app-header {
+  background: var(--bg);
+  border-bottom: 0.5px solid var(--border);
+  padding: .85rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.app-title { font-size: 15px; font-weight: 500; }
+.app-sub { font-size: 12px; color: var(--text-secondary); }
+.badge {
+  font-size: 10px; padding: 2px 8px; border-radius: 20px;
+  background: var(--purple-light); color: var(--purple);
+  font-weight: 500; margin-left: auto;
+}
+.chat-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 780px;
+  width: 100%;
+  margin: 0 auto;
+}
+.starters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: .5rem;
+}
+.starter {
+  font-size: 12px; padding: 6px 12px; border-radius: 20px;
+  border: 0.5px solid var(--border-mid); background: var(--bg);
+  color: var(--text-secondary); cursor: pointer;
+  font-family: inherit; transition: all .12s;
+}
+.starter:hover { color: var(--text-primary); border-color: var(--purple); background: var(--purple-light); }
+.msg { display: flex; gap: 10px; align-items: flex-start; }
+.msg.user { flex-direction: row-reverse; }
+.avatar {
+  width: 30px; height: 30px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 500; flex-shrink: 0;
+}
+.avatar.ai { background: var(--bg-secondary); border: 0.5px solid var(--border); color: var(--text-secondary); }
+.avatar.user { background: var(--purple-light); color: var(--purple); }
+.bubble {
+  max-width: 82%;
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--text-primary);
+  border-radius: var(--radius-lg);
+  padding: .7rem .95rem;
+}
+.bubble.ai {
+  background: var(--bg);
+  border: 0.5px solid var(--border);
+  border-top-left-radius: 0;
+}
+.bubble.user {
+  background: var(--purple-light);
+  color: var(--purple-dark);
+  border-top-right-radius: 0;
+}
+.prompt-card {
+  margin-top: 10px;
+  background: var(--bg-secondary);
+  border: 0.5px solid var(--border-mid);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.prompt-card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 7px 12px;
+  border-bottom: 0.5px solid var(--border);
+  background: var(--bg);
+}
+.prompt-card-label {
+  font-size: 10px; font-weight: 500; color: var(--text-tertiary);
+  letter-spacing: .07em; text-transform: uppercase;
+  display: flex; align-items: center; gap: 5px;
+}
+.prompt-card-label span { color: var(--teal); font-size: 12px; }
+.copy-btn {
+  font-size: 11px; padding: 3px 10px; border-radius: 20px;
+  border: 0.5px solid var(--border-mid); background: transparent;
+  color: var(--text-secondary); cursor: pointer; font-family: inherit;
+  display: flex; align-items: center; gap: 4px; transition: all .12s;
+}
+.copy-btn:hover { background: var(--bg-secondary); color: var(--text-primary); }
+.copy-btn.copied { color: #0F6E56; border-color: #5DCAA5; background: #E1F5EE; }
+.prompt-text {
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--text-primary);
+  font-family: 'Inter', monospace;
+  white-space: pre-wrap;
+}
+.typing {
+  display: flex; align-items: center; gap: 4px;
+  padding: .7rem .95rem;
+  background: var(--bg); border: 0.5px solid var(--border);
+  border-radius: var(--radius-lg); border-top-left-radius: 0;
+  width: fit-content;
+}
+.dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--text-tertiary); animation: bounce 1.2s infinite;
+}
+.dot:nth-child(2) { animation-delay: .2s; }
+.dot:nth-child(3) { animation-delay: .4s; }
+@keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-4px)} }
+.input-area {
+  background: var(--bg);
+  border-top: 0.5px solid var(--border);
+  padding: 1rem 1.5rem;
+  flex-shrink: 0;
+}
+.input-inner {
+  max-width: 780px;
+  margin: 0 auto;
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+textarea {
+  flex: 1; font-size: 13px; padding: 10px 14px;
+  border-radius: var(--radius-xl);
+  border: 0.5px solid var(--border-mid);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  resize: none; font-family: inherit; line-height: 1.5;
+  min-height: 44px; max-height: 140px;
+  transition: border-color .15s;
+}
+textarea:focus { outline: none; border-color: var(--purple); }
+textarea::placeholder { color: var(--text-tertiary); }
+.send-btn {
+  width: 40px; height: 40px; border-radius: 50%;
+  border: none; background: var(--purple); color: #fff;
+  cursor: pointer; display: flex; align-items: center;
+  justify-content: center; flex-shrink: 0; transition: opacity .15s;
+  font-size: 16px;
+}
+.send-btn:hover { opacity: .85; }
+.send-btn:disabled { opacity: .35; cursor: not-allowed; }
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <div>
+    <div class="app-title">Doc Style Prompt Adjuster</div>
+    <div class="app-sub">Cinematic documentary realism · healthcare & professional environments</div>
+  </div>
+  <span class="badge">by Tom D'Angelo</span>
+</div>
+
+<div class="chat-area" id="chatArea">
+  <div class="starters">
+    <button class="starter" onclick="useStarter(this)">Rewrite this prompt with documentary realism</button>
+    <button class="starter" onclick="useStarter(this)">Make this healthcare scene feel authentic</button>
+    <button class="starter" onclick="useStarter(this)">Turn this into a candid clinical photo</button>
+    <button class="starter" onclick="useStarter(this)">Improve realism and skin texture in this prompt</button>
+  </div>
+
+  <div class="msg" id="intro">
+    <div class="avatar ai">DS</div>
+    <div class="bubble ai">Describe a scene, paste an existing prompt, or tell me what you're going for — I'll shape it into a production-ready documentary-realism prompt.</div>
+  </div>
+</div>
+
+<div class="input-area">
+  <div class="input-inner">
+    <textarea id="input" placeholder="Describe your scene or paste a prompt to refine..." rows="1"
+      onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+    <button class="send-btn" id="sendBtn" onclick="send()" aria-label="Send">↑</button>
+  </div>
+</div>
+
+<script>
+const SYSTEM = `You are Doc Style Prompt Adjuster, a prompt adaptation assistant specialized in refining and modifying image generation prompts that capture authentic documentary-style realism in healthcare or professional environments. Your primary function is to rewrite, enhance, or adapt prompts for modern image generation systems with cinematic realism while preserving natural human authenticity.
+
+You respond with an artistic yet technically useful tone, crafting prompts that feel immersive, observational, and grounded in reality. You do not generate images unless the user explicitly asks you to create one.
+
+In nearly every interaction, provide a refined or newly written image-generation-ready prompt unless the user explicitly asks for analysis only, policy guidance, or non-prompt discussion.
+
+Every generated prompt should naturally incorporate these core stylistic foundations when relevant:
+- "A candid, documentary-style photograph"
+- "All people are rendered with ultra-natural realism: crisp, natural skin texture with visible pores, subtle freckles, soft natural skin hairs, tiny natural blemishes, and realistic imperfections. Faces show natural lip lines with subtle lip moisture. Eyes have detailed iris patterns with natural light catching softly, conveying attentiveness and engagement. Hair appears with natural thickness and soft flyaway hairs, slightly imperfect and unstyled. Hands and exposed skin show realistic tone variation and texture."
+- "The composition feels observational and human, like a candid moment."
+- "No readable text, signage, or graphics appear anywhere."
+- Style keywords such as: candid documentary photography, modern clinical realism, soft neutral lighting, ultra-natural skin detail, visible imperfections, authentic healthcare moment, unstaged composition.
+
+When revising prompts, seamlessly blend these foundations with the user's requested setting, atmosphere, diversity, wardrobe, lighting, camera angle, emotional tone, or environmental adjustments. Avoid repetitive phrasing and preserve a natural rhythm.
+
+Optimize prompts for current multimodal image-generation systems by writing concise but richly descriptive scene direction, avoiding redundant keyword stuffing, keeping realism cues integrated naturally, prioritizing physical realism, believable anatomy, authentic lighting, and unstaged composition. Avoid overprocessed beauty aesthetics, plastic skin, excessive symmetry, or synthetic commercial stock-photo language unless explicitly requested.
+
+When you produce a refined prompt, always wrap it at the very end of your response like this:
+<prompt>the full refined prompt text here</prompt>
+
+Do not claim guaranteed outputs from any image model.`;
+
+let history = [];
+
+function useStarter(btn) {
+  const input = document.getElementById('input');
+  input.value = btn.textContent;
+  autoResize(input);
+  input.focus();
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+}
+
+function scrollBottom() {
+  const area = document.getElementById('chatArea');
+  area.scrollTop = area.scrollHeight;
+}
+
+function addMsg(role, text, promptText) {
+  const area = document.getElementById('chatArea');
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  const initials = role === 'user' ? 'TD' : 'DS';
+  const escaped = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+  let promptCard = '';
+  if (promptText) {
+    const id = 'p' + Date.now();
+    const escapedPrompt = promptText.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    promptCard = `<div class="prompt-card">
+      <div class="prompt-card-header">
+        <div class="prompt-card-label"><span>✦</span> Refined prompt — ready to use</div>
+        <button class="copy-btn" id="${id}" onclick="copyPrompt('${id}')">&#x2398; Copy prompt</button>
+      </div>
+      <div class="prompt-text" id="text-${id}">${escapedPrompt}</div>
+    </div>`;
+  }
+  div.innerHTML = `<div class="avatar ${role}">${initials}</div><div class="bubble ${role}">${escaped}${promptCard}</div>`;
+  area.appendChild(div);
+  scrollBottom();
+}
+
+window.copyPrompt = function(id) {
+  const text = document.getElementById('text-' + id).innerText;
+  const btn = document.getElementById(id);
+  navigator.clipboard.writeText(text).then(() => {
+    btn.classList.add('copied');
+    btn.textContent = '✓ Copied!';
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      btn.innerHTML = '&#x2398; Copy prompt';
+    }, 2000);
+  });
+};
+
+function addTyping() {
+  const area = document.getElementById('chatArea');
+  const div = document.createElement('div');
+  div.className = 'msg';
+  div.id = 'typing';
+  div.innerHTML = `<div class="avatar ai">DS</div><div class="typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
+  area.appendChild(div);
+  scrollBottom();
+}
+
+function removeTyping() {
+  const t = document.getElementById('typing');
+  if (t) t.remove();
+}
+
+async function send() {
+  const input = document.getElementById('input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  input.value = '';
+  input.style.height = 'auto';
+  document.getElementById('sendBtn').disabled = true;
+
+  addMsg('user', text);
+  history.push({ role: 'user', content: text });
+  addTyping();
+
+  try {
+    const res = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'claude',
+        body: {
+          model: 'claude-sonnet-4-6',
+          max_tokens: 1000,
+          system: SYSTEM,
+          messages: history
+        }
+      })
+    });
+
+    const data = await res.json();
+    const raw = data.content?.map(i => i.text || '').join('') || 'Something went wrong.';
+    const promptMatch = raw.match(/<prompt>([\s\S]*?)<\/prompt>/);
+    const promptText = promptMatch ? promptMatch[1].trim() : null;
+    const displayText = raw.replace(/<prompt>[\s\S]*?<\/prompt>/g, '').trim();
+
+    removeTyping();
+    history.push({ role: 'assistant', content: raw });
+    addMsg('ai', displayText, promptText);
+  } catch (err) {
+    removeTyping();
+    addMsg('ai', 'Error: ' + err.message);
+  }
+
+  document.getElementById('sendBtn').disabled = false;
+  input.focus();
+}
+</script>
+</body>
+</html>
