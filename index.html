@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Variant Engine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #ffffff;
+  --bg-secondary: #f7f7f5;
+  --bg-tertiary: #f1f0ec;
+  --text-primary: #1a1a18;
+  --text-secondary: #6b6b67;
+  --text-tertiary: #9e9e9a;
+  --border: rgba(0,0,0,0.1);
+  --border-mid: rgba(0,0,0,0.18);
+  --purple: #534AB7;
+  --purple-light: #EEEDFE;
+  --purple-mid: #7F77DD;
+  --teal: #5DCAA5;
+  --red-light: #F09595;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1c1a;
+    --bg-secondary: #252523;
+    --bg-tertiary: #2e2e2b;
+    --text-primary: #f0ede8;
+    --text-secondary: #9e9e9a;
+    --text-tertiary: #6b6b67;
+    --border: rgba(255,255,255,0.1);
+    --border-mid: rgba(255,255,255,0.18);
+    --purple-light: #26215C;
+    --purple-mid: #AFA9EC;
+  }
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  padding: 2rem 1rem;
+}
+
+.ve-wrap { max-width: 980px; margin: 0 auto; }
+
+.ve-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 2rem;
+}
+
+.ve-logo {
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
+}
+
+.ve-sub { font-size: 13px; color: var(--text-secondary); }
+
+.ve-grid {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 720px) {
+  .ve-grid { grid-template-columns: 1fr; }
+}
+
+.panel {
+  background: var(--bg);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+}
+
+.panel-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.section-divider {
+  border: none;
+  border-top: 0.5px solid var(--border);
+  margin: 1rem 0;
+}
+
+.drop-zone {
+  border: 0.5px dashed var(--border-mid);
+  border-radius: var(--radius-md);
+  padding: 1.5rem 1rem;
+  text-align: center;
+  cursor: pointer;
+  transition: background .15s;
+  position: relative;
+  overflow: hidden;
+}
+
+.drop-zone:hover { background: var(--bg-secondary); }
+.drop-zone.has-image { padding: 0; border-style: solid; }
+.drop-zone img { width: 100%; height: 160px; object-fit: cover; border-radius: var(--radius-md); display: block; }
+.drop-icon { font-size: 22px; color: var(--text-tertiary); margin-bottom: 6px; }
+.drop-text { font-size: 13px; color: var(--text-secondary); }
+.drop-hint { font-size: 11px; color: var(--text-tertiary); margin-top: 3px; }
+.hidden-input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+.field-group { margin-top: .9rem; }
+
+.field-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 5px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+textarea, input[type=text] {
+  width: 100%;
+  font-size: 13px;
+  padding: 7px 10px;
+  border-radius: var(--radius-md);
+  border: 0.5px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  resize: none;
+  font-family: inherit;
+  line-height: 1.5;
+  transition: border-color .15s;
+}
+
+textarea:focus, input[type=text]:focus {
+  outline: none;
+  border-color: var(--purple);
+}
+
+.guidelines-section {
+  background: var(--bg-secondary);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-top: .5rem;
+}
+
+.guidelines-tabs { display: flex; border-bottom: 0.5px solid var(--border); }
+
+.gtab {
+  flex: 1;
+  padding: 7px 8px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  text-align: center;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  transition: all .12s;
+}
+
+.gtab.active { color: var(--purple); background: var(--purple-light); font-weight: 500; }
+.gtab:hover:not(.active) { background: var(--bg-tertiary); }
+
+.gtab-content { display: none; padding: 10px; }
+.gtab-content.active { display: block; }
+
+.color-swatches { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 7px; min-height: 10px; }
+
+.swatch-add { display: flex; gap: 5px; align-items: center; }
+
+.swatch {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: 0.5px solid var(--border);
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.swatch .remove {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: #fff;
+  background: rgba(0,0,0,.45);
+  border-radius: 3px;
+  opacity: 0;
+  transition: opacity .12s;
+}
+
+.swatch:hover .remove { opacity: 1; }
+
+.hex-input {
+  width: 95px;
+  font-size: 12px;
+  padding: 4px 7px;
+  border-radius: var(--radius-md);
+  border: 0.5px solid var(--border);
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: monospace;
+}
+
+.add-btn {
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: var(--radius-md);
+  border: 0.5px solid var(--border-mid);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: inherit;
+  transition: background .12s;
+}
+
+.add-btn:hover { background: var(--bg-tertiary); }
+
+.font-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 7px; min-height: 4px; }
+
+.font-tag {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 20px;
+  background: var(--purple-light);
+  color: var(--purple);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.font-remove { font-size: 12px; cursor: pointer; color: var(--purple-mid); line-height: 1; }
+
+.font-input-row { display: flex; gap: 5px; }
+.font-input-row input { flex: 1; }
+
+.guidelines-area {
+  font-size: 12px;
+  font-family: monospace;
+  padding: 8px 10px;
+  line-height: 1.6;
+}
+
+.channels-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: .4rem; }
+
+.channel-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 7px;
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--text-secondary);
+  user-select: none;
+  transition: all .15s;
+}
+
+.channel-chip:hover { border-color: var(--border-mid); background: var(--bg-secondary); }
+.channel-chip.active { border-color: var(--purple); color: var(--purple); background: var(--purple-light); }
+.channel-chip .chip-icon { font-size: 13px; }
+
+.tone-row { display: flex; gap: 5px; flex-wrap: wrap; margin-top: .4rem; }
+
+.tone-chip {
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 0.5px solid var(--border);
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all .12s;
+  background: transparent;
+  font-family: inherit;
+}
+
+.tone-chip.active { background: var(--purple-light); border-color: var(--purple); color: var(--purple); }
+
+.run-btn {
+  width: 100%;
+  margin-top: 1.1rem;
+  padding: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  border: none;
+  background: var(--purple);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  transition: opacity .15s;
+  font-family: inherit;
+}
+
+.run-btn:hover { opacity: .88; }
+.run-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+.right-panel { display: flex; flex-direction: column; gap: 1rem; }
+
+.empty-state {
+  background: var(--bg-secondary);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 3rem 2rem;
+  text-align: center;
+}
+
+.empty-icon { font-size: 28px; color: var(--text-tertiary); margin-bottom: 10px; }
+.empty-title { font-size: 15px; font-weight: 500; color: var(--text-primary); margin-bottom: 5px; }
+.empty-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+
+.variant-card {
+  background: var(--bg);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.variant-header {
+  padding: .65rem 1rem;
+  border-bottom: 0.5px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.channel-badge {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: var(--purple-light);
+  color: var(--purple);
+  letter-spacing: .04em;
+}
+
+.dims-badge { font-size: 10px; color: var(--text-tertiary); margin-left: auto; }
+
+.variant-body { display: grid; grid-template-columns: 150px 1fr; min-height: 110px; }
+
+.variant-preview {
+  background: var(--bg-secondary);
+  border-right: 0.5px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.variant-preview img { width: 100%; height: 100%; object-fit: cover; }
+
+.ratio-frame { padding: 12px; text-align: center; }
+.ratio-label { font-size: 9px; color: var(--text-tertiary); }
+
+.variant-copy { padding: .75rem 1rem; }
+.copy-headline { font-size: 13px; font-weight: 500; color: var(--text-primary); margin-bottom: 3px; }
+.copy-body { font-size: 12px; color: var(--text-secondary); margin-bottom: 7px; line-height: 1.55; }
+
+.copy-notes {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  padding-top: 7px;
+  border-top: 0.5px solid var(--border);
+  line-height: 1.5;
+}
+
+.copy-notes strong { color: var(--text-secondary); }
+
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: .45rem 1rem;
+  border-top: 0.5px solid var(--border);
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+.loading-bar { height: 2px; background: var(--purple-light); border-radius: 2px; overflow: hidden; margin-top: 10px; }
+.loading-fill { height: 100%; background: var(--purple); animation: lfill 2s ease-in-out infinite; }
+@keyframes lfill { 0% { width: 0; } 80% { width: 100%; } 100% { width: 100%; } }
+
+.guidelines-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  background: #E1F5EE;
+  color: #0F6E56;
+  border-radius: 20px;
+  padding: 2px 7px;
+  margin-left: 6px;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+}
+</style>
+</head>
+<body>
+
+<div class="ve-wrap">
+  <div class="ve-header">
+    <span class="ve-logo">Variant Engine</span>
+    <span class="ve-sub">by Tom D'Angelo · AI Creative Production</span>
+  </div>
+
+  <div class="ve-grid">
+    <div>
+      <div class="panel">
+        <div class="panel-label">Master asset</div>
+        <div class="drop-zone" id="dropZone">
+          <input type="file" class="hidden-input" id="fileInput" accept="image/*">
+          <div id="dropInner">
+            <div class="drop-icon">↑</div>
+            <div class="drop-text">Drop brand asset here</div>
+            <div class="drop-hint">PNG · JPG · WebP</div>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <div class="field-label">Creative brief / campaign context</div>
+          <textarea id="briefInput" rows="3" placeholder="e.g. Summer launch for Kraft Mac & Cheese. Hero product on bold yellow. Drive awareness, not click."></textarea>
+        </div>
+
+        <div class="field-group">
+          <div class="field-label">Tone</div>
+          <div class="tone-row">
+            <button class="tone-chip active" data-tone="Bold & direct">Bold & direct</button>
+            <button class="tone-chip" data-tone="Warm & approachable">Warm</button>
+            <button class="tone-chip" data-tone="Premium & restrained">Premium</button>
+            <button class="tone-chip" data-tone="Playful & energetic">Playful</button>
+          </div>
+        </div>
+
+        <hr class="section-divider">
+
+        <div class="panel-label" style="margin-bottom:8px">
+          Brand guidelines
+          <span class="guidelines-pill">✦ informs compliance</span>
+        </div>
+
+        <div class="guidelines-section">
+          <div class="guidelines-tabs">
+            <button class="gtab active" data-tab="colors">Colors</button>
+            <button class="gtab" data-tab="fonts">Fonts</button>
+            <button class="gtab" data-tab="rules">Rules</button>
+          </div>
+
+          <div class="gtab-content active" id="tab-colors">
+            <div class="field-label" style="font-size:11px;margin-bottom:6px">Brand palette</div>
+            <div class="color-swatches" id="swatchList"></div>
+            <div class="swatch-add">
+              <input type="color" id="colorPicker" style="width:28px;height:28px;border:none;padding:0;background:none;cursor:pointer;border-radius:4px">
+              <input type="text" class="hex-input" id="hexInput" placeholder="#FF5733" maxlength="7">
+              <button class="add-btn" id="addColorBtn">Add</button>
+            </div>
+          </div>
+
+          <div class="gtab-content" id="tab-fonts">
+            <div class="field-label" style="font-size:11px;margin-bottom:6px">Brand typefaces</div>
+            <div class="font-tags" id="fontTags"></div>
+            <div class="font-input-row">
+              <input type="text" id="fontInput" placeholder="e.g. GT Walsheim, Helvetica Neue">
+              <button class="add-btn" id="addFontBtn">Add</button>
+            </div>
+          </div>
+
+          <div class="gtab-content" id="tab-rules">
+            <div class="field-label" style="font-size:11px;margin-bottom:5px">Do / don't rules</div>
+            <textarea class="guidelines-area" id="rulesInput" rows="5" placeholder="e.g.&#10;• Logo always on white or brand navy&#10;• Never stretch or rotate the logo&#10;• Min logo clear space = 1x logo height&#10;• No more than 2 typefaces per layout&#10;• CTA always uses primary red #E5002B"></textarea>
+          </div>
+        </div>
+
+        <hr class="section-divider">
+
+        <div class="panel-label" style="margin-bottom:8px">Output channels</div>
+        <div class="channels-grid">
+          <div class="channel-chip active" data-ch="Instagram Feed" data-dims="1080×1080" data-ratio="1:1">Instagram Feed</div>
+          <div class="channel-chip active" data-ch="YouTube Thumb" data-dims="1280×720" data-ratio="16:9">YouTube Thumb</div>
+          <div class="channel-chip active" data-ch="LinkedIn Banner" data-dims="1584×396" data-ratio="4:1">LinkedIn Banner</div>
+          <div class="channel-chip" data-ch="OOH Billboard" data-dims="14×48 ft" data-ratio="3.4:1">OOH Billboard</div>
+          <div class="channel-chip" data-ch="Display Banner" data-dims="300×250" data-ratio="6:5">Display Banner</div>
+          <div class="channel-chip" data-ch="TikTok Vertical" data-dims="1080×1920" data-ratio="9:16">TikTok Vertical</div>
+        </div>
+
+        <button class="run-btn" id="runBtn" disabled>
+          ✦ Generate variants
+        </button>
+      </div>
+    </div>
+
+    <div class="right-panel" id="rightPanel">
+      <div class="empty-state">
+        <div class="empty-icon">⬡</div>
+        <div class="empty-title">No variants yet</div>
+        <div class="empty-desc">Upload a master asset, add brand guidelines,<br>pick your channels, and generate.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let uploadedImage = null;
+let selectedTone = 'Bold & direct';
+let brandColors = [];
+let brandFonts = [];
+
+const runBtn = document.getElementById('runBtn');
+const rightPanel = document.getElementById('rightPanel');
+const fileInput = document.getElementById('fileInput');
+const dropZone = document.getElementById('dropZone');
+
+document.querySelectorAll('.gtab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.gtab').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.gtab-content').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('tab-' + t.dataset.tab).classList.add('active');
+  });
+});
+
+document.querySelectorAll('.tone-chip').forEach(c => {
+  c.addEventListener('click', () => {
+    document.querySelectorAll('.tone-chip').forEach(x => x.classList.remove('active'));
+    c.classList.add('active');
+    selectedTone = c.dataset.tone;
+  });
+});
+
+document.querySelectorAll('.channel-chip').forEach(c => {
+  c.addEventListener('click', () => c.classList.toggle('active'));
+});
+
+const colorPicker = document.getElementById('colorPicker');
+const hexInput = document.getElementById('hexInput');
+colorPicker.addEventListener('input', () => { hexInput.value = colorPicker.value; });
+
+document.getElementById('addColorBtn').addEventListener('click', addColor);
+hexInput.addEventListener('keydown', e => { if (e.key === 'Enter') addColor(); });
+
+function addColor() {
+  let hex = hexInput.value.trim();
+  if (!hex.startsWith('#')) hex = '#' + hex;
+  if (/^#[0-9A-Fa-f]{6}$/.test(hex) && !brandColors.includes(hex)) {
+    brandColors.push(hex);
+    renderSwatches();
+    hexInput.value = '';
+  }
+}
+
+function renderSwatches() {
+  document.getElementById('swatchList').innerHTML = brandColors.map((c, i) =>
+    `<div class="swatch" style="background:${c}" title="${c}">
+      <div class="remove" onclick="removeSwatch(${i})">✕</div>
+    </div>`
+  ).join('');
+}
+
+window.removeSwatch = i => { brandColors.splice(i, 1); renderSwatches(); };
+
+document.getElementById('addFontBtn').addEventListener('click', addFont);
+document.getElementById('fontInput').addEventListener('keydown', e => { if (e.key === 'Enter') addFont(); });
+
+function addFont() {
+  const val = document.getElementById('fontInput').value.trim();
+  if (val && !brandFonts.includes(val)) {
+    brandFonts.push(val);
+    renderFontTags();
+    document.getElementById('fontInput').value = '';
+  }
+}
+
+function renderFontTags() {
+  document.getElementById('fontTags').innerHTML = brandFonts.map((f, i) =>
+    `<span class="font-tag">${f}<span class="font-remove" onclick="removeFont(${i})">✕</span></span>`
+  ).join('');
+}
+
+window.removeFont = i => { brandFonts.splice(i, 1); renderFontTags(); };
+
+fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.style.background = 'var(--bg-secondary)'; });
+dropZone.addEventListener('dragleave', () => dropZone.style.background = '');
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.style.background = '';
+  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+
+function handleFile(file) {
+  const reader = new FileReader();
+  reader.onload = ev => {
+    uploadedImage = ev.target.result;
+    dropZone.classList.add('has-image');
+    document.getElementById('dropInner').innerHTML = `<img src="${uploadedImage}" alt="uploaded asset">`;
+    checkReady();
+  };
+  reader.readAsDataURL(file);
+}
+
+document.getElementById('briefInput').addEventListener('input', checkReady);
+
+function checkReady() {
+  const hasBrief = document.getElementById('briefInput').value.trim().length > 0;
+  const hasChannels = document.querySelectorAll('.channel-chip.active').length > 0;
+  runBtn.disabled = !(uploadedImage && hasBrief && hasChannels);
+}
+
+function buildGuidelinesContext() {
+  const parts = [];
+  if (brandColors.length) parts.push('Brand colors: ' + brandColors.join(', '));
+  if (brandFonts.length) parts.push('Brand typefaces: ' + brandFonts.join(', '));
+  const rules = document.getElementById('rulesInput').value.trim();
+  if (rules) parts.push('Brand rules:\n' + rules);
+  return parts.length ? parts.join('\n\n') : null;
+}
+
+runBtn.addEventListener('click', async () => {
+  const brief = document.getElementById('briefInput').value.trim();
+  const channels = [...document.querySelectorAll('.channel-chip.active')].map(c => ({
+    name: c.dataset.ch, dims: c.dataset.dims, ratio: c.dataset.ratio
+  }));
+  const guidelines = buildGuidelinesContext();
+
+  runBtn.disabled = true;
+  runBtn.textContent = '⟳ Analyzing...';
+
+  rightPanel.innerHTML = `<div class="panel" style="padding:1.5rem">
+    <div class="panel-label">Generating ${channels.length} variant${channels.length > 1 ? 's' : ''}${guidelines ? ' · brand guidelines active' : ''}</div>
+    <div class="loading-bar"><div class="loading-fill"></div></div>
+    <div style="font-size:12px;color:var(--text-secondary);margin-top:10px">Claude is analyzing your asset and building channel-specific creative direction...</div>
+  </div>`;
+
+  const channelList = channels.map(c => `- ${c.name} (${c.dims}, ratio ${c.ratio})`).join('\n');
+  const guidelinesBlock = guidelines ? `\n\nBrand guidelines (use these to inform compliance checks):\n${guidelines}` : '';
+
+  const userPrompt = `Analyze this brand asset and generate channel-specific creative direction.
+
+Campaign brief: ${brief}
+Creative tone: ${selectedTone}${guidelinesBlock}
+
+Output channels:
+${channelList}
+
+For each channel return:
+- HEADLINE: Max 8 words, optimized for channel audience behavior
+- BODY: 1–2 sentences of supporting copy
+- NOTES: Specific art direction — crop focus, safe zones, text placement, color emphasis, channel adaptations
+- COMPLIANCE: A concrete pass/flag against the brand guidelines${guidelines ? ' provided above' : ' (general best practices)'}. Be specific.
+
+Respond ONLY as a JSON array. No markdown fences, no preamble. Schema:
+[{"channel":"...","dims":"...","headline":"...","body":"...","notes":"...","compliance":"...","compliant":true}]
+
+The "compliant" boolean: true if no issues, false if a concern is flagged.`;
+
+  const messages = uploadedImage ? [{
+    role: 'user',
+    content: [
+      { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: uploadedImage.split(',')[1] } },
+      { type: 'text', text: userPrompt }
+    ]
+  }] : [{ role: 'user', content: userPrompt }];
+
+  try {
+    const res = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 2000,
+        system: 'You are a senior creative director at a world-class agency. You analyze brand assets and generate precise, production-ready creative direction for each output channel.',
+        messages
+      })
+    });
+
+    const data = await res.json();
+    const raw = data.content.map(i => i.text || '').join('');
+    let variants;
+    try { variants = JSON.parse(raw.replace(/```json|```/g, '').trim()); }
+    catch (e) { const m = raw.match(/\[[\s\S]*\]/); variants = m ? JSON.parse(m[0]) : []; }
+
+    rightPanel.innerHTML = '';
+    variants.forEach(v => {
+      const ok = v.compliant !== false;
+      const card = document.createElement('div');
+      card.className = 'variant-card';
+      card.innerHTML = `
+        <div class="variant-header">
+          <span class="channel-badge">${v.channel}</span>
+          <span class="dims-badge">${v.dims}</span>
+        </div>
+        <div class="variant-body">
+          <div class="variant-preview">
+            ${uploadedImage ? `<img src="${uploadedImage}" alt="preview">` : `<div class="ratio-frame"><span class="ratio-label">${v.dims}</span></div>`}
+          </div>
+          <div class="variant-copy">
+            <div class="copy-headline">${v.headline}</div>
+            <div class="copy-body">${v.body}</div>
+            <div class="copy-notes"><strong>Art direction —</strong> ${v.notes}</div>
+          </div>
+        </div>
+        <div class="status-row">
+          <div class="dot" style="background:${ok ? '#5DCAA5' : '#F09595'}"></div>
+          <span>${v.compliance}</span>
+        </div>`;
+      rightPanel.appendChild(card);
+    });
+
+    if (!variants.length) {
+      rightPanel.innerHTML = '<div class="empty-state"><div class="empty-title">Parse error</div><div class="empty-desc">Try a clearer brief or fewer channels.</div></div>';
+    }
+  } catch (err) {
+    rightPanel.innerHTML = `<div class="panel" style="padding:1.5rem;color:#E24B4A">Error: ${err.message}</div>`;
+  }
+
+  runBtn.disabled = false;
+  runBtn.textContent = '✦ Generate variants';
+  checkReady();
+});
+</script>
+</body>
+</html>
