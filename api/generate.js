@@ -46,7 +46,6 @@ export default async function handler(req, res) {
         n: 1,
         size: body.size || '1024x1024',
         quality: 'standard',
-        response_format: 'url',
       };
 
       console.log('DALL-E request size:', body.size);
