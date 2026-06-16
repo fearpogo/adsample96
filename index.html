@@ -308,12 +308,11 @@ async function callAPI(type, body) {
 }
 
 async function generateImage(prompt, size) {
-  const data = await callAPI('dalle', {
-    model: 'dall-e-3',
+  const safePrompt = prompt.replace(/\bKraft\b/gi, "leading brand").replace(/\bMac\s*&\s*Cheese\b/gi, "macaroni and cheese").replace(/\bEasy Mac\b/gi, "instant macaroni").slice(0, 900);
+  prompt = safePrompt;
+  const data = await callAPI("dalle", {
     prompt: prompt,
-    n: 1,
     size: size || '1024x1024',
-    quality: 'standard'
   });
   return data?.data?.[0]?.url || null;
 }

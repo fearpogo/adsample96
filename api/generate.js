@@ -40,16 +40,31 @@ export default async function handler(req, res) {
     } else if (type === 'dalle') {
       if (!process.env.OPENAI_API_KEY) return res.status(500).json({ error: 'OPENAI_API_KEY not configured' });
 
+      const dalleBody = {
+        model: 'dall-e-3',
+        prompt: body.prompt,
+        n: 1,
+        size: body.size || '1024x1024',
+        quality: 'standard',
+        response_format: 'url',
+      };
+
+      console.log('DALL-E request size:', body.size);
+      console.log('DALL-E prompt length:', body.prompt?.length);
+
       const response = await fetch('https://api.openai.com/v1/images/generations', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
         },
-        body: JSON.stringify(body),
+        body: JSON.stringify(dalleBody),
       });
 
       const text = await response.text();
+      console.log('DALL-E response status:', response.status);
+      console.log('DALL-E response:', text.slice(0, 500));
+
       try {
         res.status(response.status).json(JSON.parse(text));
       } catch (e) {
@@ -60,6 +75,7 @@ export default async function handler(req, res) {
       res.status(400).json({ error: 'Unknown request type' });
     }
   } catch (err) {
+    console.error('Handler error:', err.message);
     res.status(500).json({ error: err.message });
   }
 }
