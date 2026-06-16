@@ -41,11 +41,11 @@ export default async function handler(req, res) {
       if (!process.env.OPENAI_API_KEY) return res.status(500).json({ error: 'OPENAI_API_KEY not configured' });
 
       const dalleBody = {
-        model: 'dall-e-3',
+        model: 'gpt-image-1',
         prompt: body.prompt,
         n: 1,
-        size: body.size || '1024x1024',
-        quality: 'standard',
+        size: '1024x1024',
+        quality: 'low',
       };
 
       console.log('DALL-E request size:', body.size);

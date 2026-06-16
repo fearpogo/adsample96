@@ -314,7 +314,7 @@ async function generateImage(prompt, size) {
     prompt: prompt,
     size: size || '1024x1024',
   });
-  return data?.data?.[0]?.url || null;
+  const item = data?.data?.[0]; return item?.url || (item?.b64_json ? 'data:image/png;base64,' + item.b64_json : null);
 }
 
 runBtn.addEventListener('click', async () => {
